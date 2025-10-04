@@ -268,8 +268,8 @@ class VideoWarpGUI:
                 self.warp_file.get(),
                 self.video_width,
                 self.video_height,
-                out_w,
-                out_h
+                self.video_width,
+                self.video_height
             ):
                 return
                 
