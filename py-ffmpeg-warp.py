@@ -107,10 +107,18 @@ class VideoWarpGUI:
             
     def check_video_resolution(self, video_path):
         try:
-            cap = cv2.VideoCapture(video_path)
-            self.video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            cap.release()
+            cmd = [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=width,height",
+                "-of", "json",
+                video_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            info = json.loads(result.stdout)
+            self.video_width = = int(info['streams'][0]['width'])
+            self.video_height = int(info['streams'][0]['height'])
             
             self.is_square = (self.video_width == self.video_height)
             
