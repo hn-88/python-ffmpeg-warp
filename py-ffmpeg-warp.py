@@ -117,7 +117,7 @@ class VideoWarpGUI:
             ]
             result = subprocess.run(cmd, capture_output=True, text=True)
             info = json.loads(result.stdout)
-            self.video_width = = int(info['streams'][0]['width'])
+            self.video_width = int(info['streams'][0]['width'])
             self.video_height = int(info['streams'][0]['height'])
             
             self.is_square = (self.video_width == self.video_height)
