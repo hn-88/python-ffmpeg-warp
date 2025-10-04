@@ -150,6 +150,14 @@ class VideoWarpGUI:
         self.log_text.insert(tk.END, message + "\n")
         self.log_text.see(tk.END)
         self.root.update_idletasks()
+
+    # --- Save as ASCII PGM (P2) with maxval=65535 ---
+    def save_pgm_p2(path, arr):
+        h, w = arr.shape
+        with open(path, "w") as f:
+            f.write(f"P2\n{w} {h}\n65535\n")
+            for row in arr:
+                f.write(" ".join(map(str, row.tolist())) + "\n")
         
     def generate_maps(self, warp_file, input_w, input_h, out_w, out_h):
         """Generate maps from warp file based on OCVWarp generate_masks.py"""
@@ -158,36 +166,36 @@ class VideoWarpGUI:
         try:
             # Read warp file
             with open(warp_file, 'rb') as f:
-                data = np.fromfile(f, dtype=np.float32)
+                lines = f.readlines()
             
-            # Reshape to (height, width, 4) for xyuv format
-            num_pixels = input_w * input_h
-            data = data.reshape((input_h, input_w, 4))
+            nx, ny = map(int, lines[1].split())
+            data = np.array([[float(x) for x in l.split()] for l in lines[2:]])
+            grid = data.reshape(ny, nx, 5)  # 5 columns: x, y, u, v, weight
             
-            # Extract x and y maps
-            map_x = data[:, :, 0].astype(np.float32)
-            map_y = data[:, :, 1].astype(np.float32)
+            # --- Extract normalized u,v ---
+            u = grid[::-1, :, 2]  # vertical flip
+            v = 1 - grid[::-1, :, 3]  # flip for ffmpeg remap
             
-            # Scale maps if output resolution differs
-            if out_w != input_w or out_h != input_h:
-                map_x = cv2.resize(map_x, (out_w, out_h), interpolation=cv2.INTER_LINEAR)
-                map_y = cv2.resize(map_y, (out_h, out_h), interpolation=cv2.INTER_LINEAR)
-                
-                # Scale coordinates
-                map_x = map_x * (out_w / input_w)
-                map_y = map_y * (out_h / input_h)
+            # --- Extract weight (fifth column) ---
+            weight = grid[::-1, :, 4]
             
-            # Convert to 16-bit for PGM format (remap expects this)
-            map_x_16 = (map_x * 65535 / out_w).astype(np.uint16)
-            map_y_16 = (map_y * 65535 / out_h).astype(np.uint16)
+            # --- Interpolate u,v to desired resolution ---
+            scale_x = out_w / nx
+            scale_y = out_h / ny
+            u_hr = zoom(u, (scale_y, scale_x), order=1)
+            v_hr = zoom(v, (scale_y, scale_x), order=1)
+            weight_hr = zoom(weight, (scale_y, scale_x), order=1)
             
-            # Save as PGM files
-            cv2.imwrite('map_x_directp2.pgm', map_x_16)
-            cv2.imwrite('map_y_directp2.pgm', map_y_16)
+            # --- Convert normalized -> integer source pixel coordinates ---
+            map_x = np.round(u_hr * (input_w - 1)).astype(np.uint16)
+            map_y = np.round(v_hr * (input_h - 1)).astype(np.uint16)
             
-            # Generate alpha mask (full white for now)
-            alpha_mask = np.ones((out_h, out_w), dtype=np.uint8) * 255
-            cv2.imwrite('weight_alpha_mask.png', alpha_mask)
+            save_pgm_p2("map_x_directp2.pgm", map_x)
+            save_pgm_p2("map_y_directp2.pgm", map_y)
+            
+            # --- Save weight as greyscale PNG (0..255) ---
+            weight_img = (np.clip(weight_hr, 0, 1) * 255).astype(np.uint8)
+            Image.fromarray(weight_img, mode='L').save("weight_alpha_mask.png")
             
             self.log("Maps generated successfully")
             return True
