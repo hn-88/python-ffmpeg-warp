@@ -6,6 +6,8 @@ import cv2
 import numpy as np
 import threading
 import json
+from scipy.ndimage import zoom
+from PIL import Image
 
 class VideoWarpGUI:
     def __init__(self, root):
