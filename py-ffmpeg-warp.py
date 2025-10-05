@@ -28,7 +28,7 @@ class VideoWarpGUI:
 
         self.status_var = tk.StringVar(value="Ready")
         self.status_label = tk.Label(root, textvariable=self.status_var)
-        self.status_label.pack() # Or use grid/place as appropriate
+        self.status_label.grid(row=10, column=0, columnspan=3, sticky='ew', padx=5, pady=5)
 
     def update_status(self, message):
         """Safely updates the dedicated status label in the main thread."""
