@@ -152,7 +152,7 @@ class VideoWarpGUI:
         self.root.update_idletasks()
 
     # --- Save as ASCII PGM (P2) with maxval=65535 ---
-    def save_pgm_p2(path, arr):
+    def save_pgm_p2(self, path, arr):
         h, w = arr.shape
         with open(path, "w") as f:
             f.write(f"P2\n{w} {h}\n65535\n")
