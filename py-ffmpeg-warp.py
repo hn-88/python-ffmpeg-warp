@@ -25,6 +25,14 @@ class VideoWarpGUI:
         self.is_square = False
         
         self.create_widgets()
+
+        self.status_var = tk.StringVar(value="Ready")
+        self.status_label = tk.Label(master, textvariable=self.status_var)
+        self.status_label.pack() # Or use grid/place as appropriate
+
+    def update_status(self, message):
+        """Safely updates the dedicated status label in the main thread."""
+        self.status_var.set(f"Processing: {message}")
         
     def create_widgets(self):
         # Main frame
@@ -205,7 +213,83 @@ class VideoWarpGUI:
             messagebox.showerror("Error", f"Failed to generate maps: {str(e)}")
             return False
             
-    def run_ffmpeg(self, input_video, output_video, out_w, out_h):
+    def start_ffmpeg_conversion(self, input_video, output_video, out_w, out_h):
+        """Starts the FFmpeg process in a non-blocking thread."""
+        # Disable the button/UI to prevent multiple runs
+        self.process_button.config(state="disabled") 
+        
+        # 1. Get the FFmpeg command (cmd) 
+        filter_complex = (
+            f"[0:v][1:v][2:v]remap[remapped];"
+            f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
+            f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
+            f"[blended]scale={out_w}:{out_h}[out]"
+        )
+        
+        cmd = [
+            'ffmpeg', '-y', '-i', input_video,
+            '-i', 'map_x_directp2.pgm',
+            '-i', 'map_y_directp2.pgm',
+            '-i', 'weight_alpha_mask.png',
+            '-filter_complex', filter_complex,
+            '-map', '[out]',
+            '-map', '0:a',
+            '-c:v', 'hevc_nvenc',
+            '-preset', 'p5',
+            '-cq', '23',
+            '-rc', 'vbr',
+            '-maxrate', '15M',
+            '-bufsize', '26M',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            output_video
+        ]
+        
+        
+        # 2. Create and start the thread
+        ffmpeg_thread = threading.Thread(target=self.run_ffmpeg_process, args=(cmd,))
+        ffmpeg_thread.daemon = True # Allows the program to exit even if the thread is still running
+        ffmpeg_thread.start()
+        
+        # 3. Start a monitor function to check if the thread is finished
+        self.master.after(100, self.monitor_ffmpeg_thread, ffmpeg_thread)
+
+    def run_ffmpeg_process(self, cmd):
+        """
+        Executes the FFmpeg process and logs output.
+        This method MUST be called from a separate thread.
+        """
+        process = None
+        try:
+            # Start the process
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True
+            )
+            
+            # Read the output line by line in the background thread
+            for line in process.stdout:
+                # Use root.after() to safely pass the data to the main thread for logging.
+                self.root.after(0, self.log, line.strip())
+                
+            # Wait for the process to finish
+            process.wait()
+            
+            # Handle success/failure
+            if process.returncode == 0:
+                self.master.after(0, lambda: self.conversion_complete(True))
+            else:
+                self.master.after(0, lambda: self.conversion_complete(False, process.returncode))
+                
+        except FileNotFoundError:
+            self.master.after(0, lambda: self.conversion_error("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.", "ffmpeg not found."))
+        except Exception as e:
+            self.master.after(0, lambda: self.conversion_error(f"Error running ffmpeg: {str(e)}", f"Failed to run ffmpeg: {str(e)}"))
+
+    
+    def (self, input_video, output_video, out_w, out_h):
         """Run ffmpeg command to process video"""
         self.log("Starting ffmpeg processing...")
         
@@ -285,7 +369,7 @@ class VideoWarpGUI:
                 return
                 
             # Run ffmpeg
-            self.run_ffmpeg(
+            self.start_ffmpeg_conversion(
                 self.input_video.get(),
                 self.output_video.get(),
                 out_w,
