@@ -190,8 +190,8 @@ class VideoWarpGUI:
             map_x = np.round(u_hr * (input_w - 1)).astype(np.uint16)
             map_y = np.round(v_hr * (input_h - 1)).astype(np.uint16)
             
-            save_pgm_p2("map_x_directp2.pgm", map_x)
-            save_pgm_p2("map_y_directp2.pgm", map_y)
+            self.save_pgm_p2("map_x_directp2.pgm", map_x)
+            self.save_pgm_p2("map_y_directp2.pgm", map_y)
             
             # --- Save weight as greyscale PNG (0..255) ---
             weight_img = (np.clip(weight_hr, 0, 1) * 255).astype(np.uint8)
