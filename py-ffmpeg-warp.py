@@ -27,7 +27,7 @@ class VideoWarpGUI:
         self.create_widgets()
 
         self.status_var = tk.StringVar(value="Ready")
-        self.status_label = tk.Label(master, textvariable=self.status_var)
+        self.status_label = tk.Label(root, textvariable=self.status_var)
         self.status_label.pack() # Or use grid/place as appropriate
 
     def update_status(self, message):
@@ -252,7 +252,7 @@ class VideoWarpGUI:
         ffmpeg_thread.start()
         
         # 3. Start a monitor function to check if the thread is finished
-        self.master.after(100, self.monitor_ffmpeg_thread, ffmpeg_thread)
+        self.root.after(100, self.monitor_ffmpeg_thread, ffmpeg_thread)
 
     def run_ffmpeg_process(self, cmd):
         """
@@ -279,14 +279,14 @@ class VideoWarpGUI:
             
             # Handle success/failure
             if process.returncode == 0:
-                self.master.after(0, lambda: self.conversion_complete(True))
+                self.root.after(0, lambda: self.conversion_complete(True))
             else:
-                self.master.after(0, lambda: self.conversion_complete(False, process.returncode))
+                self.root.after(0, lambda: self.conversion_complete(False, process.returncode))
                 
         except FileNotFoundError:
-            self.master.after(0, lambda: self.conversion_error("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.", "ffmpeg not found."))
+            self.root.after(0, lambda: self.conversion_error("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.", "ffmpeg not found."))
         except Exception as e:
-            self.master.after(0, lambda: self.conversion_error(f"Error running ffmpeg: {str(e)}", f"Failed to run ffmpeg: {str(e)}"))
+            self.root.after(0, lambda: self.conversion_error(f"Error running ffmpeg: {str(e)}", f"Failed to run ffmpeg: {str(e)}"))
 
     
     def run_ffmpeg(self, input_video, output_video, out_w, out_h):
