@@ -289,7 +289,7 @@ class VideoWarpGUI:
             self.master.after(0, lambda: self.conversion_error(f"Error running ffmpeg: {str(e)}", f"Failed to run ffmpeg: {str(e)}"))
 
     
-    def (self, input_video, output_video, out_w, out_h):
+    def run_ffmpeg(self, input_video, output_video, out_w, out_h):
         """Run ffmpeg command to process video"""
         self.log("Starting ffmpeg processing...")
         
