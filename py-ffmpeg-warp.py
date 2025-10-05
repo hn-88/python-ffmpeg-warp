@@ -33,6 +33,14 @@ class VideoWarpGUI:
     def update_status(self, message):
         """Safely updates the dedicated status label in the main thread."""
         self.status_var.set(f"Processing: {message}")
+
+    def monitor_ffmpeg_thread(self, thread):
+        """Checks if the thread is alive and re-runs itself."""
+        if thread.is_alive():
+            # Schedule the check again in 100 milliseconds
+            self.master.after(100, self.monitor_ffmpeg_thread, thread)
+        # else: The thread has finished, and conversion_complete/conversion_error
+        # has already been scheduled by the thread using self.master.after(0, ...)
         
     def create_widgets(self):
         # Main frame
