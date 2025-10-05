@@ -210,9 +210,8 @@ class VideoWarpGUI:
         self.log("Starting ffmpeg processing...")
         
         filter_complex = (
-            f"[0:v]scale=4096:4096[vid_scaled];"
-            f"[vid_scaled][1:v][2:v]remap[remapped];"
-            f"[3:v]format=gray,scale={out_w}:{out_h},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
+            f"[0:v][1:v][2:v]remap[remapped];"
+            f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
             f"[blended]scale=3840:2160[out]"
         )
