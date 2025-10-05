@@ -213,7 +213,7 @@ class VideoWarpGUI:
             f"[0:v][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-            f"[blended]scale=3840:2160[out]"
+            f"[blended]scale={out_w}:{out_h}[out]"
         )
         
         cmd = [
