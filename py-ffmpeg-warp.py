@@ -267,9 +267,9 @@ class VideoWarpGUI:
         This executes when ffmpeg conversion stops.
         """
         if isSuccess == True:
-                self.log(f"ffmpeg conversion complete.")
-            else:
-                self.log(f"Error during processing: {str(e)}")
+            self.log(f"ffmpeg conversion complete.")
+        else:
+            self.log(f"Error during processing: {str(e)}")
 
     def run_ffmpeg_process(self, cmd):
         """
