@@ -38,7 +38,7 @@ class VideoWarpGUI:
         """Checks if the thread is alive and re-runs itself."""
         if thread.is_alive():
             # Schedule the check again in 100 milliseconds
-            self.master.after(100, self.monitor_ffmpeg_thread, thread)
+            self.root.after(100, self.monitor_ffmpeg_thread, thread)
         # else: The thread has finished, and conversion_complete/conversion_error
         # has already been scheduled by the thread using self.master.after(0, ...)
         
@@ -262,6 +262,15 @@ class VideoWarpGUI:
         # 3. Start a monitor function to check if the thread is finished
         self.root.after(100, self.monitor_ffmpeg_thread, ffmpeg_thread)
 
+    def conversion_complete(self, isSuccess):
+        """
+        This executes when ffmpeg conversion stops.
+        """
+        if isSuccess == True:
+                self.log(f"ffmpeg conversion complete.")
+            else:
+                self.log(f"Error during processing: {str(e)}")
+
     def run_ffmpeg_process(self, cmd):
         """
         Executes the FFmpeg process and logs output.
@@ -296,64 +305,7 @@ class VideoWarpGUI:
         except Exception as e:
             self.root.after(0, lambda: self.conversion_error(f"Error running ffmpeg: {str(e)}", f"Failed to run ffmpeg: {str(e)}"))
 
-    
-    def run_ffmpeg(self, input_video, output_video, out_w, out_h):
-        """Run ffmpeg command to process video"""
-        self.log("Starting ffmpeg processing...")
-        
-        filter_complex = (
-            f"[0:v][1:v][2:v]remap[remapped];"
-            f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
-            f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-            f"[blended]scale={out_w}:{out_h}[out]"
-        )
-        
-        cmd = [
-            'ffmpeg', '-y', '-i', input_video,
-            '-i', 'map_x_directp2.pgm',
-            '-i', 'map_y_directp2.pgm',
-            '-i', 'weight_alpha_mask.png',
-            '-filter_complex', filter_complex,
-            '-map', '[out]',
-            '-map', '0:a',
-            '-c:v', 'hevc_nvenc',
-            '-preset', 'p5',
-            '-cq', '23',
-            '-rc', 'vbr',
-            '-maxrate', '15M',
-            '-bufsize', '26M',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            output_video
-        ]
-        
-        try:
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True
-            )
-            
-            for line in process.stdout:
-                self.log(line.strip())
                 
-            process.wait()
-            
-            if process.returncode == 0:
-                self.log("Processing completed successfully!")
-                messagebox.showinfo("Success", "Video processing completed!")
-            else:
-                self.log(f"FFmpeg exited with code {process.returncode}")
-                messagebox.showerror("Error", "FFmpeg processing failed. Check log for details.")
-                
-        except FileNotFoundError:
-            self.log("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.")
-            messagebox.showerror("Error", "ffmpeg not found. Please install ffmpeg.")
-        except Exception as e:
-            self.log(f"Error running ffmpeg: {str(e)}")
-            messagebox.showerror("Error", f"Failed to run ffmpeg: {str(e)}")
-            
     def process_video(self):
         """Main processing function"""
         try:
