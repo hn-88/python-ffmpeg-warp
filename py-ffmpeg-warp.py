@@ -8,6 +8,8 @@ import threading
 import json
 from scipy.ndimage import zoom
 from PIL import Image
+import signal
+import platform
 
 class VideoWarpGUI:
     def __init__(self, root):
@@ -29,6 +31,12 @@ class VideoWarpGUI:
         self.status_var = tk.StringVar(value="Ready")
         self.status_label = tk.Label(root, textvariable=self.status_var)
         self.status_label.grid(row=10, column=0, columnspan=3, sticky='ew', padx=5, pady=5)
+        self.ffmpeg_process = None
+        self.cancelling = False
+
+        # Intercept the close button
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
 
     def update_status(self, message):
         """Safely updates the dedicated status label in the main thread."""
@@ -39,8 +47,10 @@ class VideoWarpGUI:
         if thread.is_alive():
             # Schedule the check again in 100 milliseconds
             self.root.after(100, self.monitor_ffmpeg_thread, thread)
-        # else: The thread has finished, and conversion_complete/conversion_error
-        # has already been scheduled by the thread using self.master.after(0, ...)
+        else: 
+            #The thread has finished, and conversion_complete/conversion_error
+            print("FFmpeg thread completed.")
+        
         
     def create_widgets(self):
         # Main frame
@@ -257,7 +267,7 @@ class VideoWarpGUI:
         
         # 2. Create and start the thread
         ffmpeg_thread = threading.Thread(target=self.run_ffmpeg_process, args=(cmd,))
-        ffmpeg_thread.daemon = True # Allows the program to exit even if the thread is still running
+        ffmpeg_thread.daemon = True
         ffmpeg_thread.start()
         
         # 3. Start a monitor function to check if the thread is finished
@@ -280,7 +290,7 @@ class VideoWarpGUI:
         process = None
         try:
             # Start the process
-            process = subprocess.Popen(
+            self.ffmpeg_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -288,15 +298,15 @@ class VideoWarpGUI:
             )
             
             # Read the output line by line in the background thread
-            for line in process.stdout:
+            for line in self.ffmpeg_process.stdout:
                 # Use root.after() to safely pass the data to the main thread for logging.
                 self.root.after(0, self.log, line.strip())
                 
             # Wait for the process to finish
-            process.wait()
+            self.ffmpeg_process.wait()
             
             # Handle success/failure
-            if process.returncode == 0:
+            if self.ffmpeg_process.returncode == 0:
                 self.root.after(0, lambda: self.conversion_complete(True))
             else:
                 self.root.after(0, lambda: self.conversion_complete(False, process.returncode))
@@ -349,6 +359,52 @@ class VideoWarpGUI:
         thread = threading.Thread(target=self.process_video)
         thread.daemon = True
         thread.start()
+        
+    # -------------------------------
+    # Graceful shutdown with cancel message
+    # -------------------------------
+    def on_close(self):
+        """Handle the window close event."""
+        if self.ffmpeg_process and self.ffmpeg_process.poll() is None:
+            if not self.cancelling:
+                self.cancelling = True
+                self.status_label.config(text="Cancelling FFmpeg, please wait...")
+                self.process_button.config(state="disabled")
+
+                # Terminate FFmpeg in background
+                self.root.after(100, self.terminate_ffmpeg_and_exit)
+                return
+
+        # If FFmpeg not running, just close immediately
+        self.root.destroy()
+
+    def terminate_ffmpeg_and_exit(self):
+        """Terminate FFmpeg gracefully, then close window."""
+        if self.ffmpeg_process and self.ffmpeg_process.poll() is None:
+            try:
+                if platform.system() == "Windows":
+                    # Graceful-ish stop
+                    self.ffmpeg_process.terminate()
+                else:
+                    # Proper Ctrl-C behavior
+                    self.ffmpeg_process.send_signal(signal.SIGINT)
+                self.root.after(3000, self.force_kill_if_still_running)
+                return
+            except Exception as e:
+                print(f"Error terminating FFmpeg: {e}")
+
+        self.root.destroy()
+
+    def force_kill_if_still_running(self):
+        """Force kill if FFmpeg didn’t exit after 3 seconds."""
+        if self.ffmpeg_process and self.ffmpeg_process.poll() is None:
+            print("Force killing FFmpeg...")
+            try:
+                self.ffmpeg_process.kill()
+            except Exception as e:
+                print(f"Error killing FFmpeg: {e}")
+        self.root.destroy()
+
 
 def main():
     root = tk.Tk()
