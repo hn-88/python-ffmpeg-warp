@@ -309,7 +309,7 @@ class VideoWarpGUI:
             if self.ffmpeg_process.returncode == 0:
                 self.root.after(0, lambda: self.conversion_complete(True))
             else:
-                self.root.after(0, lambda: self.conversion_complete(False, process.returncode))
+                self.root.after(0, lambda: self.conversion_complete(False, self.ffmpeg_process.returncode))
                 
         except FileNotFoundError:
             self.root.after(0, lambda: self.conversion_error("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.", "ffmpeg not found."))
