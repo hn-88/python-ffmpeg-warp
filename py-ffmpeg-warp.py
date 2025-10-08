@@ -25,6 +25,12 @@ class VideoWarpGUI:
         self.video_width = 0
         self.video_height = 0
         self.is_square = False
+
+        # codec selection
+        self.output_codec = tk.StringVar(value="libx264")
+        
+        # Store available codecs
+        self.available_codecs = self.get_available_codecs()
         
         self.create_widgets()
 
@@ -37,11 +43,7 @@ class VideoWarpGUI:
         # Intercept the close button
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         
-        # codec selection
-        self.output_codec = tk.StringVar(value="libx264")
         
-        # Store available codecs
-        self.available_codecs = self.get_available_codecs()
     
     def get_available_codecs(self):
         """Query ffmpeg for available video encoders and return a curated list"""
