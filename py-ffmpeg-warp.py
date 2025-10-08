@@ -231,7 +231,7 @@ class VideoWarpGUI:
             f"[0:v][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-            f"[blended]scale={out_w}:{out_h}[out]"
+            f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
         )
         
         cmd = [
@@ -243,11 +243,12 @@ class VideoWarpGUI:
             '-map', '[out]',
             '-map', '0:a',
             '-c:v', 'hevc_nvenc',
-            '-preset', 'p5',
+            '-preset', 'p4',
             '-cq', '23',
             '-rc', 'vbr',
-            '-maxrate', '15M',
-            '-bufsize', '26M',
+            '-maxrate', '8M',
+            '-bufsize', '16M',
+            '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
             '-b:a', '128k',
             output_video
