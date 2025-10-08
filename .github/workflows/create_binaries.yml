@@ -1,0 +1,62 @@
+name: Build Standalone Binaries
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: linux-binary
+            exe_name: py-ffmpeg-warp
+          - os: windows-latest
+            artifact_name: windows-binary
+            exe_name: py-ffmpeg-warp.exe
+          - os: macos-latest
+            artifact_name: mac-binary
+            exe_name: py-ffmpeg-warp
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller numpy opencv-python pillow scipy
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed py-ffmpeg-warp.py
+        # windowed suppresses terminal for GUI
+
+      - name: Copy EP_xyuv_1920.map to dist folder
+        run: |
+          cp EP_xyuv_1920.map dist/
+        shell: bash
+
+      - name: Rename and list output files
+        run: |
+          mv dist/py-ffmpeg-warp* dist/${{ matrix.exe_name }}
+          ls -l dist/
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            dist/${{ matrix.exe_name }}
+            dist/EP_xyuv_1920.map
