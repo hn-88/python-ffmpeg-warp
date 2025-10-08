@@ -36,6 +36,114 @@ class VideoWarpGUI:
 
         # Intercept the close button
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        
+        # codec selection
+        self.output_codec = tk.StringVar(value="libx264")
+        
+        # Store available codecs
+        self.available_codecs = self.get_available_codecs()
+    
+    def get_available_codecs(self):
+        """Query ffmpeg for available video encoders and return a curated list"""
+        try:
+            # Run ffmpeg -encoders command
+            result = subprocess.run(
+                ['ffmpeg', '-encoders', '-hide_banner'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Parse the output to find video encoders
+            lines = result.stdout.split('\n')
+            video_encoders = []
+            
+            # Look for lines that start with 'V' (video encoders)
+            encoder_pattern = re.compile(r'^\s*V\.+\s+(\S+)\s+(.+)$')
+            
+            for line in lines:
+                match = encoder_pattern.match(line)
+                if match:
+                    codec_name = match.group(1)
+                    video_encoders.append(codec_name)
+            
+            # Define a curated list of commonly used codecs
+            preferred_codecs = [
+                'libx264',      # H.264 (most compatible)
+                'libx265',      # H.265/HEVC (better compression)
+                'h264_nvenc',   # NVIDIA H.264 hardware encoding
+                'hevc_nvenc',   # NVIDIA H.265 hardware encoding
+                'h264_qsv',     # Intel QuickSync H.264
+                'hevc_qsv',     # Intel QuickSync H.265
+                'h264_amf',     # AMD H.264 hardware encoding
+                'hevc_amf',     # AMD H.265 hardware encoding
+                'libvpx',       # VP8
+                'libvpx-vp9',   # VP9
+                'libaom-av1',   # AV1 (libaom)
+                'libsvtav1',    # AV1 (SVT)
+                'mpeg4',        # MPEG-4
+                'prores_ks',    # ProRes
+                'dnxhd',        # DNxHD
+            ]
+            
+            # Filter to only include codecs that are actually available
+            available = [codec for codec in preferred_codecs if codec in video_encoders]
+            
+            # If no preferred codecs found, fall back to basic set
+            if not available:
+                available = ['libx264', 'mpeg4']
+            
+            return available
+            
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+            # Fallback to common codecs if ffmpeg query fails
+            print(f"Warning: Could not query ffmpeg codecs: {e}")
+            return ['libx264', 'libx265', 'mpeg4']
+    
+    def get_codec_display_names(self):
+        """Return user-friendly names for codecs"""
+        codec_names = {
+            'libx264': 'H.264 (libx264) - Best compatibility',
+            'libx265': 'H.265/HEVC (libx265) - Better compression',
+            'h264_nvenc': 'H.264 (NVIDIA GPU)',
+            'hevc_nvenc': 'H.265 (NVIDIA GPU)',
+            'h264_qsv': 'H.264 (Intel QuickSync)',
+            'hevc_qsv': 'H.265 (Intel QuickSync)',
+            'h264_amf': 'H.264 (AMD GPU)',
+            'hevc_amf': 'H.265 (AMD GPU)',
+            'libvpx': 'VP8',
+            'libvpx-vp9': 'VP9',
+            'libaom-av1': 'AV1 (libaom)',
+            'libsvtav1': 'AV1 (SVT)',
+            'mpeg4': 'MPEG-4',
+            'prores_ks': 'ProRes',
+            'dnxhd': 'DNxHD',
+        }
+        
+        # Create display list with friendly names
+        display_list = []
+        for codec in self.available_codecs:
+            if codec in codec_names:
+                display_list.append(f"{codec_names[codec]}")
+            else:
+                display_list.append(codec)
+        
+        return display_list
+    
+    def get_codec_from_display_name(self, display_name):
+        """Extract the actual codec name from the display name"""
+        # Extract codec name from parentheses or use the whole string
+        match = re.search(r'\(([^)]+)\)', display_name)
+        if match:
+            codec = match.group(1).split()[0]  # Get first word in parentheses
+            return codec
+        
+        # If no match, try to find it in our available codecs
+        for codec in self.available_codecs:
+            if codec in display_name:
+                return codec
+        
+        return self.available_codecs[0] if self.available_codecs else 'libx264'
 
 
     def update_status(self, message):
@@ -81,6 +189,25 @@ class VideoWarpGUI:
                                         values=["3840x2160", "1920x1080"], state="readonly", width=15)
         resolution_combo.grid(row=0, column=1, padx=10, pady=5)
         resolution_combo.current(0)
+
+         # ===== Codec selection frame =====
+        self.codec_frame = ttk.LabelFrame(main_frame, text="Output Codec", padding="10")
+        self.codec_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        
+        ttk.Label(self.codec_frame, text="Select video codec:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        
+        # Create combobox with friendly names
+        codec_display_names = self.get_codec_display_names()
+        self.codec_combo = ttk.Combobox(self.codec_frame, 
+                                        values=codec_display_names,
+                                        state="readonly", width=40)
+        self.codec_combo.grid(row=0, column=1, padx=10, pady=5, sticky=(tk.W, tk.E))
+        self.codec_combo.current(0)  # Select first codec by default
+        
+        # Bind selection event
+        self.codec_combo.bind('<<ComboboxSelected>>', self.on_codec_selected)
+
+        # =====
         
         # Output video
         ttk.Label(main_frame, text="Output Video:").grid(row=4, column=0, sticky=tk.W, pady=5)
