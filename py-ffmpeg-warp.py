@@ -231,6 +231,14 @@ class VideoWarpGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
+        self.codec_frame.columnconfigure(1, weight=1)  # Make codec combo expandable
+    
+    def on_codec_selected(self, event=None):
+        """Handle codec selection change"""
+        display_name = self.codec_combo.get()
+        codec = self.get_codec_from_display_name(display_name)
+        self.output_codec.set(codec)
+        self.log_message(f"Selected codec: {codec}")
         
     def browse_warp_file(self):
         filename = filedialog.askopenfilename(
