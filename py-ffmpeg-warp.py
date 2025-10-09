@@ -107,6 +107,7 @@ class VideoWarpGUI:
     def get_codec_display_names(self):
         """Return user-friendly names for codecs"""
         codec_names = {
+            'ffvhuff': 'Huffyuv (lossless)',
             'libx264': 'H.264 (libx264) - Best compatibility',
             'libx265': 'H.265/HEVC (libx265) - Better compression',
             'h264_nvenc': 'H.264 (NVIDIA GPU)',
@@ -122,6 +123,7 @@ class VideoWarpGUI:
             'mpeg4': 'MPEG-4',
             'prores_ks': 'ProRes',
             'dnxhd': 'DNxHD',
+            'libxvid': 'XVID',
         }
         
         # Create display list with friendly names
