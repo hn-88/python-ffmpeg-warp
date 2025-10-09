@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
             artifact_name: linux-binary
@@ -15,9 +15,7 @@ jobs:
           - os: windows-latest
             artifact_name: windows-binary
             exe_name: py-ffmpeg-warp.exe
-          - os: macos-latest
-            artifact_name: mac-binary
-            exe_name: py-ffmpeg-warp
+          
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
