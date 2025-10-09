@@ -7,14 +7,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
             artifact_name: linux-binary
-            exe_name: py-ffmpeg-warp.bin
+            exe_name: py-ffmpeg-warp
           - os: windows-latest
             artifact_name: windows-binary
             exe_name: py-ffmpeg-warp.exe
+          - os: macos-latest
+            artifact_name: macos-binary
+            exe_name: py-ffmpeg-warp
           
     steps:
       - name: Checkout code
@@ -42,7 +45,7 @@ jobs:
 
       - name: Rename and list output files
         run: |
-          mv dist/py-ffmpeg-warp* dist/${{ matrix.exe_name }}
+          # mv dist/py-ffmpeg-warp* dist/${{ matrix.exe_name }}
           ls -l dist/
         shell: bash
 
