@@ -11,7 +11,7 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: linux-binary
-            exe_name: py-ffmpeg-warp
+            exe_name: py-ffmpeg-warp.bin
           - os: windows-latest
             artifact_name: windows-binary
             exe_name: py-ffmpeg-warp.exe
