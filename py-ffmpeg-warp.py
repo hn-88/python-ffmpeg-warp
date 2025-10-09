@@ -213,22 +213,22 @@ class VideoWarpGUI:
         # =====
         
         # Output video
-        ttk.Label(main_frame, text="Output Video:").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="Output Video:").grid(row=5, column=0, sticky=tk.W, pady=5)
         ttk.Entry(main_frame, textvariable=self.output_video, width=50).grid(row=4, column=1, pady=5)
         ttk.Button(main_frame, text="Browse", command=self.browse_output_video).grid(row=4, column=2, padx=5, pady=5)
         
         # Process button
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self.start_processing, state=tk.DISABLED)
-        self.process_button.grid(row=5, column=0, columnspan=3, pady=20)
+        self.process_button.grid(row=6, column=0, columnspan=3, pady=20)
         
         # Progress bar
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate', length=600)
-        self.progress.grid(row=6, column=0, columnspan=3, pady=10)
+        self.progress.grid(row=7, column=0, columnspan=3, pady=10)
         
         # Log output
-        ttk.Label(main_frame, text="Log Output:").grid(row=7, column=0, columnspan=3, sticky=tk.W)
+        ttk.Label(main_frame, text="Log Output:").grid(row=8, column=0, columnspan=3, sticky=tk.W)
         self.log_text = scrolledtext.ScrolledText(main_frame, height=15, width=80)
-        self.log_text.grid(row=8, column=0, columnspan=3, pady=5)
+        self.log_text.grid(row=9, column=0, columnspan=3, pady=5)
         
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
