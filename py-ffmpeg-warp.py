@@ -61,7 +61,7 @@ class VideoWarpGUI:
             video_encoders = []
             
             # Look for lines that start with 'V' (video encoders)
-            encoder_pattern = re.compile(r'^\s*V\.+\s+(\S+)\s+(.+)$')
+            encoder_pattern = re.compile(r'^\s*V\S*\s+(\S+)')
             
             for line in lines:
                 match = encoder_pattern.match(line)
