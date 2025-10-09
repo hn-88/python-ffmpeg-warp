@@ -10,6 +10,7 @@ from scipy.ndimage import zoom
 from PIL import Image
 import signal
 import platform
+import re
 
 class VideoWarpGUI:
     def __init__(self, root):
@@ -417,7 +418,8 @@ class VideoWarpGUI:
         if isSuccess == True:
             self.log(f"ffmpeg conversion complete.")
         else:
-            self.log(f"Error during processing: {str(e)}")
+            # self.log(f"Error during processing: {str(e)}")
+            self.log(f"Error during processing!")
 
     def run_ffmpeg_process(self, cmd):
         """
@@ -446,7 +448,8 @@ class VideoWarpGUI:
             if self.ffmpeg_process.returncode == 0:
                 self.root.after(0, lambda: self.conversion_complete(True))
             else:
-                self.root.after(0, lambda: self.conversion_complete(False, self.ffmpeg_process.returncode))
+                # self.root.after(0, lambda: self.conversion_complete(False, self.ffmpeg_process.returncode))
+                self.root.after(0, lambda: self.conversion_complete(False))
                 
         except FileNotFoundError:
             self.root.after(0, lambda: self.conversion_error("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH.", "ffmpeg not found."))
