@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import subprocess
 import os
-import cv2
 import numpy as np
 import threading
 import json
@@ -214,8 +213,8 @@ class VideoWarpGUI:
         
         # Output video
         ttk.Label(main_frame, text="Output Video:").grid(row=5, column=0, sticky=tk.W, pady=5)
-        ttk.Entry(main_frame, textvariable=self.output_video, width=50).grid(row=4, column=1, pady=5)
-        ttk.Button(main_frame, text="Browse", command=self.browse_output_video).grid(row=4, column=2, padx=5, pady=5)
+        ttk.Entry(main_frame, textvariable=self.output_video, width=50).grid(row=5, column=1, pady=5)
+        ttk.Button(main_frame, text="Browse", command=self.browse_output_video).grid(row=5, column=2, padx=5, pady=5)
         
         # Process button
         self.process_button = ttk.Button(main_frame, text="Start Processing", command=self.start_processing, state=tk.DISABLED)
