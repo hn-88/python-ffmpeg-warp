@@ -393,7 +393,7 @@ class VideoWarpGUI:
             '-filter_complex', filter_complex,
             '-map', '[out]',
             '-map', '0:a',
-            '-c:v', 'hevc_nvenc',
+            '-c:v', self.output_codec,
             '-preset', 'p4',
             '-cq', '23',
             '-rc', 'vbr',
