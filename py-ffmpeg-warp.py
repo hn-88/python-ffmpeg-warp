@@ -71,6 +71,7 @@ class VideoWarpGUI:
             
             # Define a curated list of commonly used codecs
             preferred_codecs = [
+                'ffvhuff',      # Huffyuv FFmpeg variant
                 'libx264',      # H.264 (most compatible)
                 'libx265',      # H.265/HEVC (better compression)
                 'h264_nvenc',   # NVIDIA H.264 hardware encoding
@@ -83,6 +84,7 @@ class VideoWarpGUI:
                 'libvpx-vp9',   # VP9
                 'libaom-av1',   # AV1 (libaom)
                 'libsvtav1',    # AV1 (SVT)
+                'libxvid',      # libxvidcore MPEG-4 part 2 (codec mpeg4)
                 'mpeg4',        # MPEG-4
                 'prores_ks',    # ProRes
                 'dnxhd',        # DNxHD
