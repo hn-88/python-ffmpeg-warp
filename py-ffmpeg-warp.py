@@ -394,7 +394,7 @@ class VideoWarpGUI:
             '-filter_complex', filter_complex,
             '-map', '[out]',
             '-map', '0:a',
-            '-c:v', self.output_codec,
+            '-c:v', self.output_codec.get(),
             '-preset', 'p4',
             '-cq', '23',
             '-rc', 'vbr',
