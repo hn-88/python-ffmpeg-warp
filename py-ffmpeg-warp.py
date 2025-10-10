@@ -26,6 +26,26 @@ class VideoWarpGUI:
         self.video_height = 0
         self.is_square = False
 
+        self.codec_names = {
+            'ffvhuff': 'Huffyuv (lossless)',
+            'libx264': 'H.264 (libx264) - Best compatibility',
+            'libx265': 'H.265/HEVC (libx265) - Better compression',
+            'h264_nvenc': 'H.264 (NVIDIA GPU)',
+            'hevc_nvenc': 'H.265 (NVIDIA GPU)',
+            'h264_qsv': 'H.264 (Intel QuickSync)',
+            'hevc_qsv': 'H.265 (Intel QuickSync)',
+            'h264_amf': 'H.264 (AMD GPU)',
+            'hevc_amf': 'H.265 (AMD GPU)',
+            'libvpx': 'VP8',
+            'libvpx-vp9': 'VP9',
+            'libaom-av1': 'AV1 (libaom)',
+            'libsvtav1': 'AV1 (SVT)',
+            'mpeg4': 'MPEG-4',
+            'prores_ks': 'ProRes',
+            'dnxhd': 'DNxHD',
+            'libxvid': 'XVID',
+        }
+
         # codec selection
         self.output_codec = tk.StringVar(value="libx264")
         
@@ -104,26 +124,7 @@ class VideoWarpGUI:
             print(f"Warning: Could not query ffmpeg codecs: {e}")
             return ['libx264', 'libx265', 'mpeg4']
     
-    def codec_names = {
-            'ffvhuff': 'Huffyuv (lossless)',
-            'libx264': 'H.264 (libx264) - Best compatibility',
-            'libx265': 'H.265/HEVC (libx265) - Better compression',
-            'h264_nvenc': 'H.264 (NVIDIA GPU)',
-            'hevc_nvenc': 'H.265 (NVIDIA GPU)',
-            'h264_qsv': 'H.264 (Intel QuickSync)',
-            'hevc_qsv': 'H.265 (Intel QuickSync)',
-            'h264_amf': 'H.264 (AMD GPU)',
-            'hevc_amf': 'H.265 (AMD GPU)',
-            'libvpx': 'VP8',
-            'libvpx-vp9': 'VP9',
-            'libaom-av1': 'AV1 (libaom)',
-            'libsvtav1': 'AV1 (SVT)',
-            'mpeg4': 'MPEG-4',
-            'prores_ks': 'ProRes',
-            'dnxhd': 'DNxHD',
-            'libxvid': 'XVID',
-        }
-    
+        
     def get_codec_display_names(self):
         """Return user-friendly names for codecs"""        
         
