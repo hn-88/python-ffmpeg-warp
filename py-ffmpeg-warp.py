@@ -15,7 +15,7 @@ class VideoWarpGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Video Warping Tool")
-        self.root.geometry("700x600")
+        self.root.geometry("700x700")
         
         self.warp_file = tk.StringVar()
         self.input_video = tk.StringVar()
