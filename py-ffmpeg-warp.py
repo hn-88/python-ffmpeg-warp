@@ -104,9 +104,7 @@ class VideoWarpGUI:
             print(f"Warning: Could not query ffmpeg codecs: {e}")
             return ['libx264', 'libx265', 'mpeg4']
     
-    def get_codec_display_names(self):
-        """Return user-friendly names for codecs"""
-        codec_names = {
+    def codec_names = {
             'ffvhuff': 'Huffyuv (lossless)',
             'libx264': 'H.264 (libx264) - Best compatibility',
             'libx265': 'H.265/HEVC (libx265) - Better compression',
@@ -125,25 +123,27 @@ class VideoWarpGUI:
             'dnxhd': 'DNxHD',
             'libxvid': 'XVID',
         }
+    
+    def get_codec_display_names(self):
+        """Return user-friendly names for codecs"""        
         
         # Create display list with friendly names
         display_list = []
         for codec in self.available_codecs:
-            if codec in codec_names:
-                display_list.append(f"{codec_names[codec]}")
+            if codec in self.codec_names:
+                display_list.append(f"{self.codec_names[codec]}")
             else:
                 display_list.append(codec)
         
         return display_list
     
     def get_codec_from_display_name(self, display_name):
-        """Extract the actual codec name from the display name"""
-        # Extract codec name from parentheses or use the whole string
-        match = re.search(r'\(([^)]+)\)', display_name)
-        if match:
-            codec = match.group(1).split()[0]  # Get first word in parentheses
-            return codec
-        
+        """Return codec key for a given user-friendly display name."""
+        # Reverse mapping: display name → codec key
+        for codec, name in self.codec_names.items():
+            if name == display_name:
+                return codec
+            
         # If no match, try to find it in our available codecs
         for codec in self.available_codecs:
             if codec in display_name:
