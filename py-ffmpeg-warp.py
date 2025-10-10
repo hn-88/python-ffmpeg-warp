@@ -46,6 +46,65 @@ class VideoWarpGUI:
             'libxvid': 'XVID',
         }
 
+        # Edit these to customize your preferred profiles for each codec
+        self.codec_params = {
+            'libx264': [
+                '-preset', 'fast',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
+            'libx265': [
+                '-preset', 'medium',
+                '-crf', '28',
+                '-pix_fmt', 'yuv420p',
+                '-maxrate', '8M',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
+            'hevc_nvenc': [
+                '-preset', 'p4',
+                '-cq', '23',
+                '-rc', 'vbr',
+                '-maxrate', '8M',
+                '-bufsize', '16M',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
+            'h264_nvenc': [
+                '-preset', 'p4',
+                '-cq', '23',
+                '-rc', 'vbr',
+                '-maxrate', '8M',
+                '-bufsize', '16M',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
+            'ffvhuff': [
+                '-c:v', 'ffvhuff',
+                '-pix_fmt', 'yuv420p',
+            ],
+            'mpeg4': [
+                '-q:v', '5',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
+            # ... Add profiles for other codecs
+        }
+
+        def get_ffmpeg_params(self, codec):
+            """Return list of ffmpeg parameters for the selected codec."""
+            return self.codec_params.get(codec, [
+                '-preset', 'fast',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ])
+
         # codec selection
         self.output_codec = tk.StringVar(value="libx264")
         
