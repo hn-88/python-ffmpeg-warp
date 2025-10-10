@@ -458,7 +458,8 @@ class VideoWarpGUI:
         except FileNotFoundError:
             self.root.after(0, lambda: self.log("Error: ffmpeg not found. Please install ffmpeg and ensure it's in PATH."))
         except Exception as e:
-            self.root.after(0, lambda: self.log(f"Error running ffmpeg: {str(e)}"))
+            error_msg = f"Error running ffmpeg: {str(e)}"
+            self.root.after(0, lambda: self.log(error_msg))
 
                 
     def process_video(self):
