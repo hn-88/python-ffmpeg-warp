@@ -10,6 +10,7 @@ from PIL import Image
 import signal
 import platform
 import re
+import shlex
 
 class VideoWarpGUI:
     def __init__(self, root):
@@ -472,7 +473,8 @@ class VideoWarpGUI:
             '-map', '0:a',
             '-c:v', self.output_codec.get(),
             ] + params + [output_video]
-        self.log(f"Command is: {str(cmd)}")
+        print("FFmpeg command to copy-paste:")
+        print(shlex.join(cmd))
         
         
         # 2. Create and start the thread
