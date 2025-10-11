@@ -472,6 +472,7 @@ class VideoWarpGUI:
             '-map', '0:a',
             '-c:v', self.output_codec.get(),
             ] + params + [output_video]
+        self.log(f"Command is: {str(cmd)}")
         
         
         # 2. Create and start the thread
