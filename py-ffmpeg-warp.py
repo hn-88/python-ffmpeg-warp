@@ -95,15 +95,7 @@ class VideoWarpGUI:
             # ... Add profiles for other codecs
         }
 
-        def get_ffmpeg_params(self, codec):
-            """Return list of ffmpeg parameters for the selected codec."""
-            return self.codec_params.get(codec, [
-                '-preset', 'fast',
-                '-crf', '23',
-                '-pix_fmt', 'yuv420p',
-                '-c:a', 'aac',
-                '-b:a', '128k',
-            ])
+        
 
         # codec selection
         self.output_codec = tk.StringVar(value="libx264")
@@ -126,6 +118,16 @@ class VideoWarpGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         
         
+    def get_ffmpeg_params(self, codec):
+        """Return list of ffmpeg parameters for the selected codec."""
+        return self.codec_params.get(codec, [
+            '-preset', 'fast',
+            '-crf', '23',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+        ])
+
     
     def get_available_codecs(self):
         """Query ffmpeg for available video encoders and return a curated list"""
