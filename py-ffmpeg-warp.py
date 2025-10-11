@@ -446,7 +446,7 @@ class VideoWarpGUI:
         self.process_button.config(state="disabled") 
         
         # 1. Get the FFmpeg command (cmd) 
-        if self.crop_to_4k:
+        if self.crop_to_4k.get():
             filter_complex = (
             f"[0:v]crop=4096:4096[cropped];"
             f"[cropped][1:v][2:v]remap[remapped];"
