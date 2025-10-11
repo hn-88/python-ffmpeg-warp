@@ -445,6 +445,7 @@ class VideoWarpGUI:
             f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
         )
         
+        params = self.get_ffmpeg_params(self.output_codec.get())
         cmd = [
             'ffmpeg', '-y', '-i', input_video,
             '-i', 'map_x_directp2.pgm',
@@ -454,16 +455,7 @@ class VideoWarpGUI:
             '-map', '[out]',
             '-map', '0:a',
             '-c:v', self.output_codec.get(),
-            '-preset', 'p4',
-            '-cq', '23',
-            '-rc', 'vbr',
-            '-maxrate', '8M',
-            '-bufsize', '16M',
-            '-pix_fmt', 'yuv420p',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            output_video
-        ]
+            ] + params + [output_video]
         
         
         # 2. Create and start the thread
