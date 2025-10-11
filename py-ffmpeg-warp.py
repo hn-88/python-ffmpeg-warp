@@ -110,6 +110,9 @@ class VideoWarpGUI:
         
         # Store available codecs
         self.available_codecs = self.get_available_codecs()
+
+        # Crop to 4K variable
+        self.crop_to_4k = tk.BooleanVar(value=False)
         
         self.create_widgets()
 
@@ -235,11 +238,13 @@ class VideoWarpGUI:
         ttk.Label(main_frame, text="Warp File (.map):").grid(row=0, column=0, sticky=tk.W, pady=5)
         ttk.Entry(main_frame, textvariable=self.warp_file, width=50).grid(row=0, column=1, pady=5)
         ttk.Button(main_frame, text="Browse", command=self.browse_warp_file).grid(row=0, column=2, padx=5, pady=5)
-        
+
         # Input video selection
         ttk.Label(main_frame, text="Input Video:").grid(row=1, column=0, sticky=tk.W, pady=5)
         ttk.Entry(main_frame, textvariable=self.input_video, width=50).grid(row=1, column=1, pady=5)
         ttk.Button(main_frame, text="Browse", command=self.browse_input_video).grid(row=1, column=2, padx=5, pady=5)
+        # Crop to 4K checkbox to the right of Browse button
+        ttk.Checkbutton(main_frame, text="Crop to 4K", variable=self.crop_to_4k).grid(row=1, column=3, sticky=tk.W, padx=10, pady=5)
         
         # Video info label
         self.info_label = ttk.Label(main_frame, text="", foreground="blue")
@@ -438,12 +443,21 @@ class VideoWarpGUI:
         self.process_button.config(state="disabled") 
         
         # 1. Get the FFmpeg command (cmd) 
-        filter_complex = (
+        if self.crop_to_4k:
+            filter_complex = (
+            f"[0:v]crop=4096:4096[cropped];"
+            f"[cropped][1:v][2:v]remap[remapped];"
+            f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
+            f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
+            f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+            )
+        else: 
+            filter_complex = (
             f"[0:v][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
             f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
-        )
+            )
         
         params = self.get_ffmpeg_params(self.output_codec.get())
         cmd = [
