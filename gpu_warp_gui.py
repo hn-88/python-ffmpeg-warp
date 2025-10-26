@@ -13,6 +13,7 @@ import re
 import shlex
 import moderngl
 import sys
+import queue # <--- IMPORT THE QUEUE MODULE
 
 class GPURemapper:
     """GPU-accelerated remapping using ModernGL"""
@@ -497,13 +498,30 @@ class VideoWarpGUI:
             self.log(f"Error generating maps: {str(e)}")
             messagebox.showerror("Error", f"Failed to generate maps: {str(e)}")
             return False
-            
+
+    def read_frames(self, input_proc, frame_size, frames_to_process_q):
+        """Thread function to read frames from ffmpeg."""
+        while True:
+            frame_data = input_proc.stdout.read(frame_size)
+            if len(frame_data) != frame_size:
+                break
+            frames_to_process_q.put(frame_data)
+        frames_to_process_q.put(None)  # Sentinel to signal end of stream
+
+    def write_frames(self, output_proc, frames_to_write_q):
+        """Thread function to write frames to ffmpeg."""
+        while True:
+            frame = frames_to_write_q.get()
+            if frame is None:
+                break
+            output_proc.stdin.write(frame)
+
     def gpu_process_video(self, input_video, output_video, out_w, out_h, framerate):
-        """GPU-accelerated video processing"""
+        """GPU-accelerated video processing with a multi-threaded pipeline."""
         try:
             # Get input video info
-            probe_cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', 
-                        '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1', input_video]
+            probe_cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                         '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1', input_video]
             probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
             for line in probe_result.stdout.strip().split('\n'):
                 if line.startswith('r_frame_rate='):
@@ -513,49 +531,56 @@ class VideoWarpGUI:
                     framerate = framerate or detected_fps
         except:
             framerate = framerate or 30
-            
+
         self.log(f"Processing at {framerate} fps with GPU acceleration")
-        
-        # Initialize GPU remapper
+
         input_w = self.video_width
         input_h = self.video_height
         if self.crop_to_4k.get():
             input_w = 4096
             input_h = 4096
-            
+
         self.gpu_remapper = GPURemapper("map_x_directp2.pgm", "map_y_directp2.pgm", input_w, input_h)
         self.gpu_remapper.set_output_size(out_w, out_h)
         self.gpu_remapper.set_mask_texture("weight_alpha_mask.png")
-        
-        # FFmpeg input process
+
         if self.crop_to_4k.get():
             input_cmd = ['ffmpeg', '-i', input_video, '-vf', 'crop=4096:4096', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1']
         else:
             input_cmd = ['ffmpeg', '-i', input_video, '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1']
-        
-        # FFmpeg output process
+
         params = self.get_ffmpeg_params(self.output_codec.get())
-        output_cmd = ['ffmpeg', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{out_w}x{out_h}', 
-                     '-r', str(framerate), '-i', 'pipe:0', '-c:v', self.output_codec.get()] + params + ['-y', output_video]
-        
+        output_cmd = ['ffmpeg', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{out_w}x{out_h}',
+                      '-r', str(framerate), '-i', 'pipe:0', '-c:v', self.output_codec.get()] + params + ['-y', output_video]
+
         self.log(f"Input command: {' '.join(input_cmd)}")
         self.log(f"Output command: {' '.join(output_cmd)}")
-        
+
         input_proc = subprocess.Popen(input_cmd, stdout=subprocess.PIPE, stderr=sys.stderr, bufsize=10**8)
         output_proc = subprocess.Popen(output_cmd, stdin=subprocess.PIPE, stderr=sys.stderr, bufsize=10**8)
-        
+
         frame_size = input_w * input_h * 3
         frame_count = 0
+
+        # Create queues
+        frames_to_process_q = queue.Queue(maxsize=30)  # maxsize helps to prevent excessive memory usage
+        frames_to_write_q = queue.Queue(maxsize=30)
+
+        # Start read and write threads
+        read_thread = threading.Thread(target=self.read_frames, args=(input_proc, frame_size, frames_to_process_q))
+        write_thread = threading.Thread(target=self.write_frames, args=(output_proc, frames_to_write_q))
+        read_thread.start()
+        write_thread.start()
         
         try:
             while True:
-                frame_data = input_proc.stdout.read(frame_size)
-                if len(frame_data) != frame_size:
+                frame_data = frames_to_process_q.get()
+                if frame_data is None: # End of stream
                     break
                 
                 frame = np.frombuffer(frame_data, dtype=np.uint8).reshape((input_h, input_w, 3))
                 remapped = self.gpu_remapper.remap_frame(frame, use_mask=True)
-                output_proc.stdin.write(remapped.tobytes())
+                frames_to_write_q.put(remapped.tobytes())
                 
                 frame_count += 1
                 if frame_count % 30 == 0:
@@ -566,6 +591,10 @@ class VideoWarpGUI:
             import traceback
             traceback.print_exc()
         finally:
+            frames_to_write_q.put(None) # Signal writer thread to exit
+            read_thread.join()
+            write_thread.join()
+
             try:
                 input_proc.stdout.close()
                 if output_proc.stdin:
@@ -580,7 +609,7 @@ class VideoWarpGUI:
             
         self.root.after(0, self.log, f"Finished processing {frame_count} frames")
         self.root.after(0, self.conversion_complete, True)
-
+            
     def conversion_complete(self, isSuccess):
         """This executes when conversion stops."""
         if isSuccess:
@@ -632,7 +661,7 @@ class VideoWarpGUI:
         thread = threading.Thread(target=self.process_video)
         thread.daemon = True
         thread.start()
-        self.root.after(100, self.monitor_ffmpeg_thread, thread)
+        self.monitor_ffmpeg_thread(thread) # Keep the original monitor for the main processing thread
         
     def on_close(self):
         """Handle the window close event."""
