@@ -16,7 +16,21 @@ class VideoWarpGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Video Warping Tool")
-        self.root.geometry("700x700")
+        # Desired window size
+        desired_width = 800
+        desired_height = 800
+
+        # Get screen dimensions
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        # Calculate the actual window size
+        actual_width = min(desired_width, screen_width-20)
+        actual_height = min(desired_height, screen_height-20)
+
+        # Set the geometry
+        self.root.geometry(f"{actual_width}x{actual_height}")
+        # self.root.geometry("700x900")
         
         self.warp_file = tk.StringVar()
         self.input_video = tk.StringVar()
@@ -276,10 +290,12 @@ class VideoWarpGUI:
                                         values=codec_display_names,
                                         state="readonly", width=40)
         self.codec_combo.grid(row=0, column=1, padx=10, pady=5, sticky=(tk.W, tk.E))
-        self.codec_combo.current(0)  # Select first codec by default
+        self.codec_combo.current(4)  # Select hevc_nvenc codec by default
         
         # Bind selection event
         self.codec_combo.bind('<<ComboboxSelected>>', self.on_codec_selected)
+        # Generate the event to run the callback for the initial value
+        self.codec_combo.event_generate('<<ComboboxSelected>>')
 
         # =====
         
