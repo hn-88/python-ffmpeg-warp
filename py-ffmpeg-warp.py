@@ -40,7 +40,7 @@ class VideoWarpGUI:
         self.video_width = 0
         self.video_height = 0
         self.is_square = False
-        self.total_frames = 0
+        self.total_frames = 100000
 
         self.codec_names = {
             'ffvhuff': 'Huffyuv (lossless)',
@@ -362,6 +362,9 @@ class VideoWarpGUI:
         if filename:
             self.input_video.set(filename)
             self.check_video_resolution(filename)
+            count = self.get_frame_count(filename)
+            if (count > 0)
+                self.total_frames = count
             self.check_ready()
             
     def browse_output_video(self):
@@ -374,6 +377,67 @@ class VideoWarpGUI:
             self.output_video.set(filename)
             self.check_ready()
             
+    def get_frame_count(self, video_path):
+        """
+        Return total frames estimated from duration * avg_frame_rate using ffprobe metadata.
+        On any error or missing/invalid metadata the function returns 0.
+        """
+        try:
+            cmd = [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "format=duration,stream=avg_frame_rate,r_frame_rate,stream=duration",
+                "-of", "json",
+                video_path,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0 or not result.stdout:
+                return 0
+    
+            info = json.loads(result.stdout)
+    
+            # get duration (try format then stream)
+            duration = None
+            if info.get("format", {}).get("duration"):
+                duration = float(info["format"]["duration"])
+            else:
+                streams = info.get("streams", [])
+                if streams and streams[0].get("duration"):
+                    duration = float(streams[0]["duration"])
+            if not duration or duration <= 0:
+                return 0
+    
+            # get fps string (try avg_frame_rate then r_frame_rate)
+            streams = info.get("streams", [])
+            if not streams:
+                return 0
+            s = streams[0]
+            fps_str = s.get("avg_frame_rate") or s.get("r_frame_rate") or ""
+            if not fps_str or fps_str in ("N/A", "nan"):
+                return 0
+    
+            # convert fractional fps safely
+            try:
+                fps = float(Fraction(fps_str))
+            except Exception:
+                try:
+                    fps = float(fps_str)
+                except Exception:
+                    return 0
+    
+            if not (fps > 0):
+                return 0
+    
+            total_frames = int(round(duration * fps))
+            if total_frames < 0:
+                return 0
+    
+            return total_frames
+    
+        except Exception:
+            return 0
+    
     def check_video_resolution(self, video_path):
         try:
             cmd = [
@@ -614,10 +678,6 @@ class VideoWarpGUI:
         """Start processing in a separate thread"""
         """before that, get total number of frames"""
         try:
-            probe_cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_frames",
-                         "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", self.input_video.get()]
-            result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
-            self.total_frames = int(result.stdout.strip())
             self.progress['maximum'] = self.total_frames
             self.progress['mode'] = 'determinate'
         except Exception as e:
