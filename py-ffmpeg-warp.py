@@ -165,7 +165,7 @@ class VideoWarpGUI:
             
             for line in lines:
                 match = encoder_pattern.match(line)
-                if match:
+                 match:
                     codec_name = match.group(1)
                     video_encoders.append(codec_name)
             
@@ -191,7 +191,7 @@ class VideoWarpGUI:
             ]
             
             # Filter to only include codecs that are actually available
-            available = [codec for codec in preferred_codecs if codec in video_encoders]
+            available = [codec for codec in preferred_codecs  codec in video_encoders]
             
             # If no preferred codecs found, fall back to basic set
             if not available:
@@ -363,7 +363,7 @@ class VideoWarpGUI:
             self.input_video.set(filename)
             self.check_video_resolution(filename)
             count = self.get_frame_count(filename)
-            if (count > 0)
+            if (count > 0):
                 self.total_frames = count
             self.check_ready()
             
