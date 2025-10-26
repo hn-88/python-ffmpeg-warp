@@ -291,12 +291,19 @@ class VideoWarpGUI:
                                         values=codec_display_names,
                                         state="readonly", width=40)
         self.codec_combo.grid(row=0, column=1, padx=10, pady=5, sticky=(tk.W, tk.E))
-        self.codec_combo.current(4)  # Select hevc_nvenc codec by default
+        # Make default selection safer (fallback to 0 if index 4 not available)
+        try:
+            self.codec_combo.current(4)  # Prefer hevc_nvenc if available
+        except Exception:
+            try:
+                self.codec_combo.current(0)
+            except Exception:
+                pass
         
         # Bind selection event
         self.codec_combo.bind('<<ComboboxSelected>>', self.on_codec_selected)
-        # Generate the event to run the callback for the initial value
-        self.codec_combo.event_generate('<<ComboboxSelected>>')
+        # Generate the event to run the callback for the initial value, but after all other widgets are ready
+        # self.codec_combo.event_generate('<<ComboboxSelected>>')
 
         # =====
         
@@ -317,6 +324,13 @@ class VideoWarpGUI:
         ttk.Label(main_frame, text="Log Output:").grid(row=8, column=0, columnspan=3, sticky=tk.W)
         self.log_text = scrolledtext.ScrolledText(main_frame, height=15, width=80)
         self.log_text.grid(row=9, column=0, columnspan=3, pady=5)
+
+        # Now that the log widget exists, trigger the combobox selection handler once
+        # to initialize internal state and log the selection safely.
+        try:
+            self.codec_combo.event_generate('<<ComboboxSelected>>')
+        except Exception:
+            pass
         
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
