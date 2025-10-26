@@ -40,6 +40,7 @@ class VideoWarpGUI:
         self.video_width = 0
         self.video_height = 0
         self.is_square = False
+        self.total_frames = 0
 
         self.codec_names = {
             'ffvhuff': 'Huffyuv (lossless)',
@@ -526,10 +527,20 @@ class VideoWarpGUI:
                 universal_newlines=True
             )
             
+            frame_regex = re.compile(r"frame=\s*(\d+)")
             # Read the output line by line in the background thread
             for line in self.ffmpeg_process.stdout:
                 # Use root.after() to safely pass the data to the main thread for logging.
                 self.root.after(0, self.log, line.strip())
+                match = frame_regex.search(line)
+                if match and self.total_frames > 0:
+                    frame_num = int(match.group(1))
+                    self.progress['value'] = frame_num
+                    # Update the status bar
+                    status_text = f"Frame {frame_num} of {self.total_frames}"
+                    self.status_var.set(status_text)
+                
+            self.root.update_idletasks()
                 
             # Wait for the process to finish
             self.ffmpeg_process.wait()
@@ -587,6 +598,18 @@ class VideoWarpGUI:
             
     def start_processing(self):
         """Start processing in a separate thread"""
+        """before that, get total number of frames"""
+        try:
+            probe_cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_frames",
+                         "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", self.input_video.get()]
+            result = subprocess.run(probe_cmd, capture_output=True, text=True, check=True)
+            self.total_frames = int(result.stdout.strip())
+            self.progress['maximum'] = self.total_frames
+            self.progress['mode'] = 'determinate'
+        except Exception as e:
+            self.log(f"Could not determine total frames: {e}. Progress bar will be indeterminate.")
+            self.progress.start()
+            
         thread = threading.Thread(target=self.process_video)
         thread.daemon = True
         thread.start()
