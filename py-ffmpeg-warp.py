@@ -546,7 +546,7 @@ class VideoWarpGUI:
         if self.crop_to_4k.get():
             leftcoord = self.video_width - 2048;
             filter_complex = (
-            f"[0:v]crop=4096:4096:leftcoord:0[cropped];"
+            f"[0:v]crop=4096:4096:{leftcoord}:0[cropped];"
             f"[cropped][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
@@ -556,7 +556,7 @@ class VideoWarpGUI:
             if self.crop_to_1k.get():
                 leftcoord = self.video_width - 540;
                 filter_complex = (
-                f"[0:v]crop=1080:1080:leftcoord:0[cropped];"
+                f"[0:v]crop=1080:1080:{leftcoord}:0[cropped];"
                 f"[cropped][1:v][2:v]remap[remapped];"
                 f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
                 f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
