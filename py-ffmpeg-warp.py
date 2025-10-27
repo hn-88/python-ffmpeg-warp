@@ -270,7 +270,7 @@ class VideoWarpGUI:
         
         # Output resolution frame 
         self.resolution_frame = ttk.LabelFrame(main_frame, text="Output Resolution", padding="10")
-        self.resolution_frame.grid(row=3, column=2, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        self.resolution_frame.grid(row=3, column=2, columnspan=2, sticky=(tk.W, tk.E), pady=10)
         # Crop checkboxes to the left of output resolution dropdown
         ttk.Checkbutton(main_frame, text="Crop input to 4K", variable=self.crop_to_4k).grid(row=3, column=0, sticky=tk.W, padx=10, pady=5)
         ttk.Checkbutton(main_frame, text="Crop input to 1K", variable=self.crop_to_1k).grid(row=3, column=1, sticky=tk.W, padx=10, pady=5)
@@ -460,10 +460,10 @@ class VideoWarpGUI:
             info_text = f"Video Resolution: {self.video_width}x{self.video_height}"
             if self.is_square:
                 info_text += " (Square)"
-                self.resolution_frame.grid()
+                # self.resolution_frame.grid()
             else:
                 info_text += " (Non-square)"
-                self.resolution_frame.grid_remove()
+                # self.resolution_frame.grid_remove()
                 
             self.info_label.config(text=info_text)
             self.log(info_text)
