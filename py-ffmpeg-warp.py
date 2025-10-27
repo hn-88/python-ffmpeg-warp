@@ -550,7 +550,7 @@ class VideoWarpGUI:
             f"[cropped][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-            f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+            f"[blended]scale={out_w}:{out_h},setsar=1,setdar=16/9,format=yuv420p[out]"
             )
         else: 
             if self.crop_to_1k.get():
@@ -560,14 +560,14 @@ class VideoWarpGUI:
                 f"[cropped][1:v][2:v]remap[remapped];"
                 f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
                 f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-                f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+                f"[blended]scale={out_w}:{out_h},setsar=1,setdar=16/9,format=yuv420p[out]"
                 )
             else:
                 filter_complex = (
                 f"[0:v][1:v][2:v]remap[remapped];"
                 f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
                 f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-                f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+                f"[blended]scale={out_w}:{out_h},setsar=1,setdar=16/9,format=yuv420p[out]"
                 )
         
         params = self.get_ffmpeg_params(self.output_codec.get())
