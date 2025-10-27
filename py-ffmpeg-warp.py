@@ -119,8 +119,9 @@ class VideoWarpGUI:
         # Store available codecs
         self.available_codecs = self.get_available_codecs()
 
-        # Crop to 4K variable
+        # Crop variables
         self.crop_to_4k = tk.BooleanVar(value=False)
+        self.crop_to_1k = tk.BooleanVar(value=False)
         
         self.create_widgets()
 
@@ -261,17 +262,18 @@ class VideoWarpGUI:
         ttk.Label(main_frame, text="Input Video:").grid(row=1, column=0, sticky=tk.W, pady=5)
         ttk.Entry(main_frame, textvariable=self.input_video, width=50).grid(row=1, column=1, pady=5)
         ttk.Button(main_frame, text="Browse", command=self.browse_input_video).grid(row=1, column=2, padx=5, pady=5)
-        # Crop to 4K checkbox to the right of Browse button
-        ttk.Checkbutton(main_frame, text="Crop to 4K", variable=self.crop_to_4k).grid(row=1, column=3, sticky=tk.W, padx=10, pady=5)
+        
         
         # Video info label
         self.info_label = ttk.Label(main_frame, text="", foreground="blue")
         self.info_label.grid(row=2, column=0, columnspan=3, sticky=tk.W, pady=5)
         
-        # Output resolution frame (initially hidden)
+        # Output resolution frame 
         self.resolution_frame = ttk.LabelFrame(main_frame, text="Output Resolution", padding="10")
-        self.resolution_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
-        self.resolution_frame.grid_remove()
+        self.resolution_frame.grid(row=3, column=2, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        # Crop checkboxes to the left of output resolution dropdown
+        ttk.Checkbutton(main_frame, text="Crop input to 4K", variable=self.crop_to_4k).grid(row=3, column=0, sticky=tk.W, padx=10, pady=5)
+        ttk.Checkbutton(main_frame, text="Crop input to 1K", variable=self.crop_to_1k).grid(row=3, column=1, sticky=tk.W, padx=10, pady=5)
         
         ttk.Label(self.resolution_frame, text="Select output resolution:").grid(row=0, column=0, sticky=tk.W, pady=5)
         resolution_combo = ttk.Combobox(self.resolution_frame, textvariable=self.output_resolution, 
@@ -457,7 +459,7 @@ class VideoWarpGUI:
             
             info_text = f"Video Resolution: {self.video_width}x{self.video_height}"
             if self.is_square:
-                info_text += " (Square - Output resolution required)"
+                info_text += " (Square)"
                 self.resolution_frame.grid()
             else:
                 info_text += " (Non-square)"
@@ -542,20 +544,31 @@ class VideoWarpGUI:
         
         # 1. Get the FFmpeg command (cmd) 
         if self.crop_to_4k.get():
+            leftcoord = self.video_width - 2048;
             filter_complex = (
-            f"[0:v]crop=4096:4096[cropped];"
+            f"[0:v]crop=4096:4096:leftcoord:0[cropped];"
             f"[cropped][1:v][2:v]remap[remapped];"
             f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
             f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
             f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
             )
         else: 
-            filter_complex = (
-            f"[0:v][1:v][2:v]remap[remapped];"
-            f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
-            f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
-            f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
-            )
+            if self.crop_to_1k.get():
+                leftcoord = self.video_width - 540;
+                filter_complex = (
+                f"[0:v]crop=1080:1080:leftcoord:0[cropped];"
+                f"[cropped][1:v][2:v]remap[remapped];"
+                f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
+                f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
+                f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+                )
+            else:
+                filter_complex = (
+                f"[0:v][1:v][2:v]remap[remapped];"
+                f"[3:v]format=gray,scale={self.video_width}:{self.video_height},colorchannelmixer=rr=1:gg=1:bb=1[mask_rgb];"
+                f"[remapped][mask_rgb]blend=all_mode=multiply[blended];"
+                f"[blended]scale={out_w}:{out_h},format=yuv420p[out]"
+                )
         
         params = self.get_ffmpeg_params(self.output_codec.get())
         cmd = [
