@@ -540,7 +540,7 @@ class VideoWarpGUI:
     def start_ffmpeg_conversion(self, input_video, output_video, out_w, out_h):
         """Starts the FFmpeg process in a non-blocking thread."""
         # Disable the button/UI to prevent multiple runs
-        self.process_button.config(state="disabled") 
+        self.process_button.config(state=tk.DISABLED) 
         
         # 1. Get the FFmpeg command (cmd) 
         if self.crop_to_4k.get():
@@ -710,7 +710,7 @@ class VideoWarpGUI:
             if not self.cancelling:
                 self.cancelling = True
                 self.status_label.config(text="Cancelling FFmpeg, please wait...")
-                self.process_button.config(state="disabled")
+                self.process_button.config(state=tk.DISABLED)
 
                 # Terminate FFmpeg in background
                 self.root.after(100, self.terminate_ffmpeg_and_exit)
