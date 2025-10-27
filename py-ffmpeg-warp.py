@@ -166,7 +166,7 @@ class VideoWarpGUI:
             
             for line in lines:
                 match = encoder_pattern.match(line)
-                 match:
+                match:
                     codec_name = match.group(1)
                     video_encoders.append(codec_name)
             
