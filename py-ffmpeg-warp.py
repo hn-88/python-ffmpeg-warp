@@ -389,7 +389,7 @@ class VideoWarpGUI:
                 "ffprobe",
                 "-v", "error",
                 "-select_streams", "v:0",
-                "-show_entries", "format=duration,stream=avg_frame_rate,r_frame_rate,stream=duration",
+                "-show_streams", 
                 "-of", "json",
                 video_path,
             ]
@@ -401,12 +401,18 @@ class VideoWarpGUI:
     
             # get duration (try format then stream)
             duration = None
-            if info.get("format", {}).get("duration"):
-                duration = float(info["format"]["duration"])
+            fmt = info.get("format", {})
+            if fmt.get("duration"):
+                duration = float(fmt["duration"])
             else:
-                streams = info.get("streams", [])
-                if streams and streams[0].get("duration"):
-                    duration = float(streams[0]["duration"])
+                for s in info.get("streams", []):
+                    if s.get("duration"):
+                        duration = float(s["duration"])
+                        break
+                    if s.get("tags", {}).get("DURATION"):
+                        h, m, s_str = s["tags"]["DURATION"].split(":")
+                        duration = int(h)*3600 + int(m)*60 + float(s_str)
+                        break
             if not duration or duration <= 0:
                 return 0
     
