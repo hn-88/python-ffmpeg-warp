@@ -584,7 +584,7 @@ class VideoWarpGUI:
             '-i', 'weight_alpha_mask.png',
             '-filter_complex', filter_complex,
             '-map', '[out]',
-            '-map', '0:a',
+            '-map', '0:a?',
             '-c:v', self.output_codec.get(),
             ] + params + [output_video]
         print("FFmpeg command to copy-paste:")
