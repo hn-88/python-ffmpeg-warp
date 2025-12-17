@@ -94,6 +94,8 @@ class VideoWarpGUI:
             'hevc_videotoolbox': [
                 '-quality', 'balanced',
                 '-b:v', '5M',
+                '-tag:v', 'hvc1',
+                '-movflags', '+frag_keyframe+empty_moov',
                 '-maxrate', '8M',
                 '-bufsize', '16M',
                 '-pix_fmt', 'yuv420p',
@@ -103,6 +105,8 @@ class VideoWarpGUI:
             'h264_videotoolbox': [
                 '-quality', 'balanced',
                 '-b:v', '5M',
+                '-tag:v', 'avc1',
+                '-movflags', '+frag_keyframe+empty_moov+faststart',
                 '-maxrate', '8M',
                 '-bufsize', '16M',
                 '-pix_fmt', 'yuv420p',
