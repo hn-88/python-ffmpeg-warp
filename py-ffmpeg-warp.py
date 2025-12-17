@@ -177,6 +177,8 @@ class VideoWarpGUI:
                 'libx265',      # H.265/HEVC (better compression)
                 'h264_nvenc',   # NVIDIA H.264 hardware encoding
                 'hevc_nvenc',   # NVIDIA H.265 hardware encoding
+                'h264_videotoolbox',   # Apple H.264 hardware encoding
+                'hevc_videotoolbox',   # Apple H.265 hardware encoding
                 'h264_qsv',     # Intel QuickSync H.264
                 'hevc_qsv',     # Intel QuickSync H.265
                 'h264_amf',     # AMD H.264 hardware encoding
