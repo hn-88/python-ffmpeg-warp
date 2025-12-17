@@ -100,6 +100,15 @@ class VideoWarpGUI:
                 '-c:a', 'aac',
                 '-b:a', '128k',
             ],
+            'h264_videotoolbox': [
+                '-quality', 'balanced',
+                '-b:v', '5M',
+                '-maxrate', '8M',
+                '-bufsize', '16M',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+            ],
             'h264_nvenc': [
                 '-preset', 'p4',
                 '-cq', '23',
