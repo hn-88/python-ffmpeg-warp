@@ -11,6 +11,7 @@ import signal
 import platform
 import re
 import shlex
+from fractions import Fraction
 
 class VideoWarpGUI:
     def __init__(self, root):
@@ -405,17 +406,19 @@ class VideoWarpGUI:
             self.output_video.set(filename)
             self.check_ready()
             
+
     def get_frame_count(self, video_path):
         """
-        Return total frames estimated from duration * avg_frame_rate using ffprobe metadata.
-        On any error or missing/invalid metadata the function returns 0.
+        Return total frames using nb_frames if available, otherwise estimate 
+        using duration * avg_frame_rate.
         """
         try:
             cmd = [
                 "ffprobe",
                 "-v", "error",
                 "-select_streams", "v:0",
-                "-show_streams", 
+                "-show_streams",
+                "-show_format",  # <--- FIXED: This was missing in the original code
                 "-of", "json",
                 video_path,
             ]
@@ -424,54 +427,59 @@ class VideoWarpGUI:
                 return 0
     
             info = json.loads(result.stdout)
-    
-            # get duration (try format then stream)
-            duration = None
-            fmt = info.get("format", {})
-            if fmt.get("duration"):
-                duration = float(fmt["duration"])
-            else:
-                for s in info.get("streams", []):
-                    if s.get("duration"):
-                        duration = float(s["duration"])
-                        break
-                    if s.get("tags", {}).get("DURATION"):
-                        h, m, s_str = s["tags"]["DURATION"].split(":")
-                        duration = int(h)*3600 + int(m)*60 + float(s_str)
-                        break
-            if not duration or duration <= 0:
-                return 0
-    
-            # get fps string (try avg_frame_rate then r_frame_rate)
+            
             streams = info.get("streams", [])
             if not streams:
                 return 0
-            s = streams[0]
-            fps_str = s.get("avg_frame_rate") or s.get("r_frame_rate") or ""
+            stream = streams[0]
+    
+            # 1. Try to get the exact frame count from metadata (Best for MP4/MOV)
+            nb_frames = stream.get("nb_frames")
+            if nb_frames and nb_frames.lower() != "n/a":
+                try:
+                    return int(nb_frames)
+                except ValueError:
+                    pass
+    
+            # 2. Fallback: Calculate from Duration * FPS
+            
+            # Get duration: try stream first, then format, then tags
+            duration = None
+            if stream.get("duration") and stream["duration"] != "N/A":
+                 duration = float(stream["duration"])
+            elif info.get("format", {}).get("duration") and info["format"]["duration"] != "N/A":
+                 duration = float(info["format"]["duration"])
+            elif stream.get("tags", {}).get("DURATION"):
+                # Handle MKV timestamp format (HH:MM:SS.ms)
+                try:
+                    h, m, s_str = stream["tags"]["DURATION"].split(":")
+                    duration = int(h)*3600 + int(m)*60 + float(s_str)
+                except Exception:
+                    pass
+    
+            if not duration or duration <= 0:
+                return 0
+    
+            # Get FPS
+            fps_str = stream.get("avg_frame_rate") or stream.get("r_frame_rate") or ""
             if not fps_str or fps_str in ("N/A", "nan"):
                 return 0
     
-            # convert fractional fps safely
             try:
                 fps = float(Fraction(fps_str))
             except Exception:
-                try:
-                    fps = float(fps_str)
-                except Exception:
-                    return 0
+                return 0
     
             if not (fps > 0):
                 return 0
     
             total_frames = int(round(duration * fps))
-            if total_frames < 0:
-                return 0
+            return total_frames if total_frames > 0 else 0
     
-            return total_frames
-    
-        except Exception:
+        except Exception as e:
+            print(f"Error getting frame count: {e}")
             return 0
-    
+            
     def check_video_resolution(self, video_path):
         try:
             cmd = [
