@@ -44,8 +44,8 @@ class VideoWarpGUI:
         }
         
         self.transform_type = tk.StringVar(value="4: 180 fisheye to Warped (.map required)")
-        self.angle_x = tk.DoubleVar(value=0.0)
-        self.angle_y = tk.DoubleVar(value=0.0)
+        self.angle_x = tk.DoubleVar(value=-90.0)
+        self.angle_y = tk.DoubleVar(value=-180.0)
 
         self.warp_file = tk.StringVar()
         self.input_video = tk.StringVar()
@@ -80,14 +80,14 @@ class VideoWarpGUI:
         }
 
         self.codec_params = {
-            'libx264': ['-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
-            'libx265': ['-preset', 'medium', '-crf', '28', '-pix_fmt', 'yuv420p', '-maxrate', '8M', '-c:a', 'aac', '-b:a', '128k'],
-            'hevc_nvenc': ['-preset', 'p4', '-cq', '23', '-rc', 'vbr', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
-            'hevc_videotoolbox': ['-quality', 'balanced', '-b:v', '5M', '-tag:v', 'hvc1', '-movflags', '+frag_keyframe+empty_moov', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
-            'h264_videotoolbox': ['-quality', 'balanced', '-b:v', '5M', '-tag:v', 'avc1', '-movflags', '+frag_keyframe+empty_moov+faststart', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
-            'h264_nvenc': ['-preset', 'p4', '-cq', '23', '-rc', 'vbr', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
-            'ffvhuff': ['-c:v', 'ffvhuff', '-pix_fmt', 'yuv420p'],
-            'mpeg4': ['-q:v', '5', '-c:a', 'aac', '-b:a', '128k'],
+            'libx264':['-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
+            'libx265':['-preset', 'medium', '-crf', '28', '-pix_fmt', 'yuv420p', '-maxrate', '8M', '-c:a', 'aac', '-b:a', '128k'],
+            'hevc_nvenc':['-preset', 'p4', '-cq', '23', '-rc', 'vbr', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
+            'hevc_videotoolbox':['-quality', 'balanced', '-b:v', '5M', '-tag:v', 'hvc1', '-movflags', '+frag_keyframe+empty_moov', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
+            'h264_videotoolbox':['-quality', 'balanced', '-b:v', '5M', '-tag:v', 'avc1', '-movflags', '+frag_keyframe+empty_moov+faststart', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
+            'h264_nvenc':['-preset', 'p4', '-cq', '23', '-rc', 'vbr', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'],
+            'ffvhuff':['-c:v', 'ffvhuff', '-pix_fmt', 'yuv420p'],
+            'mpeg4':['-q:v', '5', '-c:a', 'aac', '-b:a', '128k'],
         }
 
         # codec selection
@@ -114,16 +114,30 @@ class VideoWarpGUI:
 
     def on_transform_change(self, event=None):
         tt = self.get_current_transform_type()
+        
+        # 1. Update Map requirements
         if tt in [4, 5]:
             self.warp_entry.config(state=tk.NORMAL)
             self.warp_btn.config(state=tk.NORMAL)
         else:
             self.warp_entry.config(state=tk.DISABLED)
             self.warp_btn.config(state=tk.DISABLED)
+            
+        # 2. Update output resolution dropdown based on transform type
+        if tt in [0, 1]:
+            self.resolution_combo['values'] =["4096x4096", "2048x2048", "1024x1024", "512x512"]
+            self.output_resolution.set("4096x4096")
+        elif tt in [2, 3]:
+            self.resolution_combo['values'] =["8192x4096", "4096x2048", "2048x1024", "1024x512"]
+            self.output_resolution.set("4096x2048")
+        elif tt in [4, 5]:
+            self.resolution_combo['values'] =["3840x2160", "1920x1080"]
+            self.output_resolution.set("3840x2160")
+            
         self.check_ready()
         
     def get_ffmpeg_params(self, codec):
-        return self.codec_params.get(codec, [
+        return self.codec_params.get(codec,[
             '-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k'
         ])
 
@@ -131,7 +145,7 @@ class VideoWarpGUI:
         try:
             result = subprocess.run(['ffmpeg', '-encoders', '-hide_banner'], capture_output=True, text=True, timeout=5)
             lines = result.stdout.split('\n')
-            video_encoders = []
+            video_encoders =[]
             encoder_pattern = re.compile(r'^\s*V\S*\s+(\S+)')
             
             for line in lines:
@@ -140,23 +154,23 @@ class VideoWarpGUI:
                     codec_name = match.group(1)
                     video_encoders.append(codec_name)
             
-            preferred_codecs = [
+            preferred_codecs =[
                 'ffvhuff', 'libx264', 'libx265', 'h264_nvenc', 'hevc_nvenc', 'h264_videotoolbox', 
                 'hevc_videotoolbox', 'h264_qsv', 'hevc_qsv', 'h264_amf', 'hevc_amf', 'libvpx', 
                 'libvpx-vp9', 'libaom-av1', 'libsvtav1', 'libxvid', 'mpeg4', 'prores_ks', 'dnxhd'
             ]
             
-            available = [codec for codec in preferred_codecs if codec in video_encoders]
+            available =[codec for codec in preferred_codecs if codec in video_encoders]
             if not available:
                 available = ['libx264', 'mpeg4']
             return available
             
         except Exception as e:
             print(f"Warning: Could not query ffmpeg codecs: {e}")
-            return ['libx264', 'libx265', 'mpeg4']
+            return['libx264', 'libx265', 'mpeg4']
     
     def get_codec_display_names(self):
-        display_list = []
+        display_list =[]
         for codec in self.available_codecs:
             if codec in self.codec_names:
                 display_list.append(f"{self.codec_names[codec]}")
@@ -223,10 +237,10 @@ class VideoWarpGUI:
         ttk.Checkbutton(main_frame, text="Crop input to 1K", variable=self.crop_to_1k).grid(row=3, column=1, sticky=tk.W, padx=10, pady=5)
         
         ttk.Label(self.resolution_frame, text="Select output resolution:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        resolution_combo = ttk.Combobox(self.resolution_frame, textvariable=self.output_resolution, 
+        self.resolution_combo = ttk.Combobox(self.resolution_frame, textvariable=self.output_resolution, 
                                         values=["3840x2160", "1920x1080"], state="readonly", width=15)
-        resolution_combo.grid(row=0, column=1, padx=10, pady=5)
-        resolution_combo.current(0)
+        self.resolution_combo.grid(row=0, column=1, padx=10, pady=5)
+        self.resolution_combo.current(0)
 
          # ===== Codec selection frame =====
         self.codec_frame = ttk.LabelFrame(main_frame, text="Output Codec", padding="10")
@@ -273,6 +287,9 @@ class VideoWarpGUI:
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
         self.codec_frame.columnconfigure(1, weight=1)
+        
+        # Initialize UI state based on default values
+        self.on_transform_change()
     
     def on_codec_selected(self, event=None):
         display_name = self.codec_combo.get()
@@ -304,7 +321,7 @@ class VideoWarpGUI:
 
     def get_frame_count(self, video_path):
         try:
-            cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_streams", "-show_format", "-of", "json", video_path]
+            cmd =["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_streams", "-show_format", "-of", "json", video_path]
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode != 0 or not result.stdout:
                 return 0
@@ -349,7 +366,7 @@ class VideoWarpGUI:
             
     def check_video_resolution(self, video_path):
         try:
-            cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", video_path]
+            cmd =["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", video_path]
             result = subprocess.run(cmd, capture_output=True, text=True)
             info = json.loads(result.stdout)
             self.video_width = int(info['streams'][0]['width'])
@@ -408,7 +425,7 @@ class VideoWarpGUI:
         mask = np.ones((out_h, out_w), dtype=np.float32)
 
         with np.errstate(divide='ignore', invalid='ignore'):
-            if transformtype in [0, 1]:
+            if transformtype in[0, 1]:
                 aperture = 2 * np.pi if transformtype == 0 else np.pi
                 halfcols = out_w / 2.0
                 halfrows = out_h / 2.0
@@ -510,9 +527,9 @@ class VideoWarpGUI:
                     map_x_1, map_y_1, mask_1 = self.get_math_maps(1, in_w, in_h, inter_w, inter_h, anglex, angley)
                     
                     # Compose maps using map_coordinates
-                    map_x = map_coordinates(map_x_1, [map_y_4, map_x_4], order=1, mode='nearest')
+                    map_x = map_coordinates(map_x_1,[map_y_4, map_x_4], order=1, mode='nearest')
                     map_y = map_coordinates(map_y_1, [map_y_4, map_x_4], order=1, mode='nearest')
-                    mask = map_coordinates(mask_1, [map_y_4, map_x_4], order=1, mode='constant', cval=0.0) * weight_hr
+                    mask = map_coordinates(mask_1,[map_y_4, map_x_4], order=1, mode='constant', cval=0.0) * weight_hr
 
             else:
                 # Types 0, 1, 2, 3
@@ -571,7 +588,7 @@ class VideoWarpGUI:
                 )
         
         params = self.get_ffmpeg_params(self.output_codec.get())
-        cmd = [
+        cmd =[
             'ffmpeg', '-y', '-i', input_video,
             '-i', 'map_x_directp2.pgm',
             '-i', 'map_y_directp2.pgm',
@@ -580,7 +597,7 @@ class VideoWarpGUI:
             '-map', '[out]',
             '-map', '0:a?',
             '-c:v', self.output_codec.get(),
-            ] + params + [output_video]
+            ] + params +[output_video]
             
         print("FFmpeg command to copy-paste:")
         print(shlex.join(cmd))
@@ -633,8 +650,10 @@ class VideoWarpGUI:
             self.progress.start()
             self.process_button.config(state=tk.DISABLED)
             
-            if self.is_square:
-                out_w, out_h = map(int, self.output_resolution.get().split('x'))
+            # Determine explicit output resolution based on the combo box
+            out_res = self.output_resolution.get()
+            if out_res:
+                out_w, out_h = map(int, out_res.split('x'))
             else:
                 out_w, out_h = self.video_width, self.video_height
                 
