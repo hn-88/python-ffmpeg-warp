@@ -492,8 +492,11 @@ class VideoWarpGUI:
 
         return map_x, map_y, mask
         
-    def generate_all_maps(self, transformtype, warp_file, in_w, in_h, out_w, out_h, anglex, angley):
+    def generate_all_maps(self, transformtype, warp_file, in_w, in_h, anglex, angley):
         self.log(f"Generating maps for transform type {transformtype}...")
+        # ffmpeg's blend filter needs the maps to be the same size as the input
+        out_w = in_w
+        out_h = in_h
         
         try:
             if transformtype in [4, 5]:
@@ -662,7 +665,7 @@ class VideoWarpGUI:
             ay = self.angle_y.get()
 
             if not self.generate_all_maps(
-                tt, self.warp_file.get(), self.video_width, self.video_height, out_w, out_h, ax, ay
+                tt, self.warp_file.get(), self.video_width, self.video_height, ax, ay
             ):
                 return
                 
