@@ -130,10 +130,13 @@ class VideoWarpGUI:
         elif tt in [2, 3]:
             self.resolution_combo['values'] =["8192x4096", "4096x2048", "2048x1024", "1024x512"]
             self.output_resolution.set("4096x2048")
-            self.angle_y = tk.DoubleVar(value=0.0)
+            self.angle_y.set(0.0)
         elif tt in [4, 5]:
             self.resolution_combo['values'] =["3840x2160", "1920x1080"]
             self.output_resolution.set("3840x2160")
+
+        if tt in [0, 1, 5]:
+            self.angle_y.set(-180.0)            
             
         self.check_ready()
         
