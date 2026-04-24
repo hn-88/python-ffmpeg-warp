@@ -1,0 +1,48 @@
+name: Build Standalone Helper Binaries
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: imgseq-to-video-linux-binary
+            exe_name: imgseq-to-video
+          - os: windows-latest
+            artifact_name: imgseq-to-video-windows-binary
+            exe_name: imgseq-to-video.exe
+          - os: macos-latest
+            artifact_name: imgseq-to-video-macos-binary
+            exe_name: imgseq-to-video
+          
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller numpy pillow scipy
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed helper/imgseq_to_video.py
+        # windowed suppresses terminal for GUI
+
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            dist/${{ matrix.exe_name }}
+            
