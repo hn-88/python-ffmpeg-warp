@@ -35,7 +35,8 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --onefile --windowed helper/imgseq_to_video.py
+          cp helper/imgseq_to_video.py imgseq-to-video.py
+          pyinstaller --onefile --windowed imgseq-to-video.py
         # windowed suppresses terminal for GUI
 
       
